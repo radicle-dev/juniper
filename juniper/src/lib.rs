@@ -59,6 +59,7 @@ your Schemas automatically.
 * [uuid][uuid]
 * [url][url]
 * [chrono][chrono]
+* [bson][bson]
 
 ### Web Frameworks
 
@@ -86,9 +87,10 @@ Juniper has not reached 1.0 yet, thus some API instability should be expected.
 [uuid]: https://crates.io/crates/uuid
 [url]: https://crates.io/crates/url
 [chrono]: https://crates.io/crates/chrono
+[bson]: https://crates.io/crates/bson
 
 */
-#![doc(html_root_url = "https://docs.rs/juniper/0.14.1")]
+#![doc(html_root_url = "https://docs.rs/juniper/0.14.2")]
 #![warn(missing_docs)]
 
 #[doc(hidden)]
@@ -105,6 +107,9 @@ extern crate url;
 
 #[cfg(any(test, feature = "uuid"))]
 extern crate uuid;
+
+#[cfg(any(test, feature = "bson"))]
+extern crate bson;
 
 // Depend on juniper_codegen and re-export everything in it.
 // This allows users to just depend on juniper and get the derive
@@ -157,6 +162,7 @@ use crate::{
     parser::{parse_document_source, ParseError, Spanning},
     validation::{validate_input_values, visit_all_rules, ValidatorContext},
 };
+use std::fmt;
 
 pub use crate::{
     ast::{FromInputValue, InputValue, Selection, ToInputValue, Type},
@@ -193,6 +199,26 @@ pub enum GraphQLError<'a> {
     IsSubscription,
 }
 
+impl<'a> fmt::Display for GraphQLError<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            GraphQLError::ParseError(error) => write!(f, "{}", error),
+            GraphQLError::ValidationError(errors) => {
+                for error in errors {
+                    writeln!(f, "{}", error)?;
+                }
+                Ok(())
+            }
+            GraphQLError::NoOperationProvided => write!(f, "No operation provided"),
+            GraphQLError::MultipleOperationsProvided => write!(f, "Multiple operations provided"),
+            GraphQLError::UnknownOperationName => write!(f, "Unknown operation name"),
+            GraphQLError::IsSubscription => write!(f, "Subscription are not currently supported"),
+        }
+    }
+}
+
+impl<'a> std::error::Error for GraphQLError<'a> {}
+
 /// Execute a query in a provided schema
 pub fn execute<'a, S, CtxT, QueryT, MutationT>(
     document_source: &'a str,
@@ -228,7 +254,7 @@ where
         }
     }
 
-    execute_validated_query(document, operation_name, root_node, variables, context)
+    execute_validated_query(&document, operation, root_node, variables, context)
 }
 
 /// Execute a query in a provided schema
@@ -249,7 +275,7 @@ where
     CtxT: Send + Sync,
 {
     let document = parse_document_source(document_source, &root_node.schema)?;
-    
+
     {
         let mut ctx = ValidatorContext::new(&root_node.schema, &document);
         visit_all_rules(&mut ctx, &document);
@@ -270,7 +296,7 @@ where
         }
     }
 
-    executor::execute_validated_query_async(document, operation_name, root_node, variables, context)
+    executor::execute_validated_query_async(&document, operation, root_node, variables, context)
         .await
 }
 

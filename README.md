@@ -2,7 +2,6 @@
 
 > GraphQL server library for Rust
 
-[![Build Status](https://travis-ci.org/graphql-rust/juniper.svg?branch=master)](https://travis-ci.org/graphql-rust/juniper)
 [![Build Status](https://dev.azure.com/graphql-rust/GraphQL%20Rust/_apis/build/status/graphql-rust.juniper)](https://dev.azure.com/graphql-rust/GraphQL%20Rust/_build/latest?definitionId=1)
 [![codecov](https://codecov.io/gh/graphql-rust/juniper/branch/master/graph/badge.svg)](https://codecov.io/gh/graphql-rust/juniper)
 [![Crates.io](https://img.shields.io/crates/v/juniper.svg?maxAge=2592000)](https://crates.io/crates/juniper)
@@ -15,7 +14,7 @@ serve mobile and web application frontends.
 
 _Juniper_ makes it possible to write GraphQL servers in Rust that are
 type-safe and blazingly fast. We also try to make declaring and resolving
-GraphQL schemas as convenient as possible as Rust will allow.
+GraphQL schemas as convenient as Rust will allow.
 
 Juniper does not include a web server - instead it provides building blocks to
 make integration with existing servers straightforward. It optionally provides a
@@ -68,6 +67,7 @@ your Schemas automatically.
 - [uuid][uuid]
 - [url][url]
 - [chrono][chrono]
+- [bson][bson]
 
 ### Web Frameworks
 
@@ -106,4 +106,5 @@ Juniper has not reached 1.0 yet, thus some API instability should be expected.
 [uuid]: https://crates.io/crates/uuid
 [url]: https://crates.io/crates/url
 [chrono]: https://crates.io/crates/chrono
+[bson]: https://crates.io/crates/bson
 [juniper-from-schema]: https://github.com/davidpdrsn/juniper-from-schema

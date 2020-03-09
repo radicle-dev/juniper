@@ -1,4 +1,10 @@
-use std::{borrow::Cow, cmp::Ordering, collections::HashMap, fmt::Display, sync::RwLock};
+use std::{
+    borrow::Cow,
+    cmp::Ordering,
+    collections::HashMap,
+    fmt::{self, Debug, Display},
+    sync::RwLock,
+};
 
 use fnv::FnvHashMap;
 
@@ -664,7 +670,6 @@ where
     S: ScalarValue,
     QueryT: GraphQLType<S, Context = CtxT>,
     MutationT: GraphQLType<S, Context = CtxT>,
-    for<'c> &'c S: ScalarRefValue<'c>,
 {
     let mut fragments = vec![];
     for def in document.iter() {
@@ -743,9 +748,9 @@ where
 }
 
 #[cfg(feature = "async")]
-pub async fn execute_validated_query_async<'a, QueryT, MutationT, CtxT, S>(
-    document: Document<'a, S>,
-    operation_name: Option<&str>,
+pub async fn execute_validated_query_async<'a, 'b, QueryT, MutationT, CtxT, S>(
+    document: &'b Document<'a, S>,
+    operation: &'b Spanning<Operation<'_, S>>,
     root_node: &RootNode<'a, QueryT, MutationT, S>,
     variables: &Variables<S>,
     context: &CtxT,
@@ -759,36 +764,14 @@ where
     CtxT: Send + Sync,
 {
     let mut fragments = vec![];
-    let mut operation = None;
-
-    for def in document {
+    for def in document.iter() {
         match def {
-            Definition::Operation(op) => {
-                if operation_name.is_none() && operation.is_some() {
-                    return Err(GraphQLError::MultipleOperationsProvided);
-                }
-
-                let move_op = operation_name.is_none()
-                    || op.item.name.as_ref().map(|s| s.item) == operation_name;
-
-                if move_op {
-                    operation = Some(op);
-                }
-            }
             Definition::Fragment(f) => fragments.push(f),
+            _ => (),
         };
     }
 
-    let op = match operation {
-        Some(op) => op,
-        None => return Err(GraphQLError::UnknownOperationName),
-    };
-
-    if op.item.operation_type == OperationType::Subscription {
-        return Err(GraphQLError::IsSubscription);
-    }
-
-    let default_variable_values = op.item.variable_definitions.map(|defs| {
+    let default_variable_values = operation.item.variable_definitions.as_ref().map(|defs| {
         defs.item
             .items
             .iter()
@@ -817,7 +800,7 @@ where
             final_vars = &all_vars;
         }
 
-        let root_type = match op.item.operation_type {
+        let root_type = match operation.item.operation_type {
             OperationType::Query => root_node.schema.query_type(),
             OperationType::Mutation => root_node
                 .schema
@@ -832,16 +815,16 @@ where
                 .map(|f| (f.item.name.item, &f.item))
                 .collect(),
             variables: final_vars,
-            current_selection_set: Some(&op.item.selection_set[..]),
+            current_selection_set: Some(&operation.item.selection_set[..]),
             parent_selection_set: None,
             current_type: root_type,
             schema: &root_node.schema,
             context,
             errors: &errors,
-            field_path: FieldPath::Root(op.start),
+            field_path: FieldPath::Root(operation.start),
         };
 
-        value = match op.item.operation_type {
+        value = match operation.item.operation_type {
             OperationType::Query => {
                 executor
                     .resolve_into_value_async(&root_node.query_info, &root_node)

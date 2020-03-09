@@ -863,6 +863,7 @@ impl GraphQLTypeDefiniton {
                                     Err(e) => Err(e),
                                 }
                             };
+                            use futures::future;
                             future::FutureExt::boxed(f)
                         },
                     )
@@ -879,6 +880,7 @@ impl GraphQLTypeDefiniton {
                                     Err(e) => Err(e),
                                 }
                             };
+                            use futures::future;
                             future::FutureExt::boxed(f)
                         )
                     } else {
@@ -888,6 +890,7 @@ impl GraphQLTypeDefiniton {
                                 Ok(None) => Ok(#juniper_crate_name::Value::null()),
                                 Err(e) => Err(e),
                             };
+                            use futures::future;
                             future::FutureExt::boxed(future::ready(v))
                         )
                     };
