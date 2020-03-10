@@ -292,8 +292,8 @@ pub fn impl_enum(ast: &syn::DeriveInput, is_internal: bool) -> TokenStream {
         }
 
         impl From<#ident> for String {
-            fn from(&self) -> String {
-                match self {
+            fn from(e: #ident) -> Self {
+                match e {
                     #to_strings
                 }
             }
